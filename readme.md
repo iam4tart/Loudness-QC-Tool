@@ -6,7 +6,7 @@ POLISH: problem -> solution -> tech stack -> thinking pointers
 [x] Audio capture
 [x] Capture chunks
 [x] K-weighting filter
-[ ] Loudness calculation
+[x] Loudness calculation
 [ ] Real-time display
 [ ] Integrated loudness
 [ ] Deploy
@@ -48,6 +48,7 @@ mean squaring ->
 squaring makes everything positive and amplifies louder sounds more than the quiet ones (matches perception)
 mean the squares over a sliding window of 400ms every 100ms (75% overlap), this gives "momentary loudness" reading 10 times per second.
 in dsp, 50% or more overlap is considered a good balance between time resolution and frequency resolution, helping to minimize artifacts and more accurate representations of rapidly changing signals.
+short term loudness is similarly to momentary loudness in all aspects except the window size which is 3000ms (3s averages)
 
 mean_square = sum(sample**2 for each sample in window) / num_samples
 to convert to lufs -> LUFS = -0.691 + 10 x log10(mean_square)
@@ -98,6 +99,31 @@ so we are using linear dB scale for visual metering as
 -60 to 0 LUFS spread evenly = linear scale
 but since LUFS is already log, this is perceptually correct
 
+metering is pretty straightforward for example 
+currentLufs = -18 LUFS
+range = -60 to 0 = 60 units in total
+calc = -18 - (-60) = 42 units from bottom
+42/60*100 = draw 70% height
+every 100ms the worklet sends a LUFS value.
+
+range = MAX_LUFS - MIN_LUFS = 0 - (-60) = 60
+(clamped - MIN_LUFS) = distance from the bottom
+distance/60 = what fraction of the way up you are
+multiply by 100 = percentage
+
+visual meter bar grows from bottom so height of bar is calculated from bottom
+while scale marks on the meter are positioned from the top
+typically, label sits exactly where the bar would reach at that loudness level
+top: 0% - height: 100% -> 0 LUFS
+top: 3% - height: 70% -> 0 LUFS
+top: 100% - height: 0% -> 0 LUFS
+
+2 separate buffers run in parallel - one for momentary and one for short term.
+each with own buffer, buffersize and samplessincelastreport
+the k-weighted sample gets pushed into both buffers every teration and they share same filter input but accumulate independently
+
+
+
 delay calculation for full chain:
 
 AUDIO INPUT
@@ -141,3 +167,7 @@ Sources used:
 [High level overview of loudness (little old)](https://www.production-expert.com/production-expert-1/loudness-everything-you-need-to-know)
 
 managing start and stop and start for averaging lufs
+improvements:
+VU meter behaviour more accurate - bar should fall slower than it rises
+peak hold for atleast 2s
+
