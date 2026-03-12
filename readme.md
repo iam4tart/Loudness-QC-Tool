@@ -1,3 +1,5 @@
+![Loudness Meter Tool Preview](assets/images/preview.png)
+
 POLISH: problem -> solution -> tech stack -> thinking pointers -> i should keep text lowercase
 
 [x] HTML button
@@ -8,10 +10,10 @@ POLISH: problem -> solution -> tech stack -> thinking pointers -> i should keep 
 [x] K-weighting filter
 [x] Loudness calculation
 [x] Real-time display
-[ ] Integrated loudness
-[ ] True Peak
-[ ] Styling
-[ ] Deploy
+[x] Integrated loudness
+[x] True Peak
+[x] Styling
+[-] Deploy
 
 technically, audio heavy dsp tooling should be done in C++ for faster computation and with WASM compiled for JS, but loudness meter is not technically heavy therefore directly using webaudio api with audioworklet works here.
 
