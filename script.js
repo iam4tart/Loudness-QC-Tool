@@ -104,12 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (e.data.momentary !== undefined) {
                             momentaryLufs = e.data.momentary;
                             shortTermLufs = e.data.shortTerm;
+                            truePeakLufs = e.data.truePeak;
                         }
                         if (e.data.integrated !== undefined) {
                             integratedLufs = e.data.integrated;
-                        }
-                        if (e.data.truePeak !== undefined) {
-                            truePeakLufs = e.data.truePeak;
                         }
                     };
 
@@ -128,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
             button.textContent = "Start Recording";
             momentaryLufs = -Infinity;
             shortTermLufs = -Infinity;
+            truePeakLufs = -Infinity; 
 
             window.workletNode.port.postMessage({ command: "getIntegrated" });
 

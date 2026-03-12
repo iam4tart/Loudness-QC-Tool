@@ -55,10 +55,8 @@ class LoudnessProcessor extends AudioWorkletProcessor {
         this.port.onmessage = (e) => {
             if (e.data.command === "getIntegrated") {
                 const integrated = this.calculateIntegrated();
-                const dbTP = 20 * Math.log10(this.truePeak);
                 this.port.postMessage({ 
-                    integrated: isFinite(integrated) ? integrated : -Infinity,
-                    truePeak: isFinite(dbTP) ? dbTP : -Infinity
+                    integrated: isFinite(integrated) ? integrated : -Infinity
                 });
             }
         };
@@ -166,6 +164,7 @@ class LoudnessProcessor extends AudioWorkletProcessor {
             }
 
             this.samplesSinceLastReport++;
+            
 
             if (this.samplesSinceLastReport >= this.hopSize) { // time to hop to new frame
                 this.samplesSinceLastReport = 0;
@@ -175,9 +174,11 @@ class LoudnessProcessor extends AudioWorkletProcessor {
                 const meanSquare_shortterm = this.buffer_shortterm.reduce((a, b) => a + b, 0) / this.buffer_shortterm.length;
                 const momentaryLufs = -0.691 + 10 * Math.log10(meanSquare_momentary);
                 const shorttermLufs = -0.691 + 10 * Math.log10(meanSquare_shortterm);
+                const currentDbTP = 20 * Math.log10(this.truePeakMax);
                 this.port.postMessage({
                     momentary: isFinite(momentaryLufs) ? momentaryLufs : -Infinity,
-                    shortTerm: isFinite(shorttermLufs) ? shorttermLufs : -Infinity
+                    shortTerm: isFinite(shorttermLufs) ? shorttermLufs : -Infinity,
+                    truePeak: isFinite(currentDbTP) ? currentDbTP : -Infinity
                 });
             }
         }
