@@ -1,4 +1,4 @@
-POLISH: problem -> solution -> tech stack -> thinking pointers
+POLISH: problem -> solution -> tech stack -> thinking pointers -> i should keep text lowercase
 
 [x] HTML button
 [x] JS toggle
@@ -7,8 +7,10 @@ POLISH: problem -> solution -> tech stack -> thinking pointers
 [x] Capture chunks
 [x] K-weighting filter
 [x] Loudness calculation
-[ ] Real-time display
+[x] Real-time display
 [ ] Integrated loudness
+[ ] True Peak
+[ ] Styling
 [ ] Deploy
 
 technically, audio heavy dsp tooling should be done in C++ for faster computation and with WASM compiled for JS, but loudness meter is not technically heavy therefore directly using webaudio api with audioworklet works here.
@@ -122,7 +124,62 @@ top: 100% - height: 0% -> 0 LUFS
 each with own buffer, buffersize and samplessincelastreport
 the k-weighted sample gets pushed into both buffers every teration and they share same filter input but accumulate independently
 
+integratedBlocks is non-limit, it grows forever. at 100ms per block, 1 hour of audio = 36,000 blocks ~= 288KB of memory.
+fine for browser usecase, production meters use a running sum instead of storing every block.
 
+a question - how does the code handle aliased peaks in the audio if the blocks are discard while handling integrated Loudness, and it doesn't and that's fine because we are not trying to catch peaks but average perceived loudness over time. a single loud transient lasts maybe 5-10ms, so that transient gets averaged into the block and its energy contribution is tiny.
+and this question understanding also somehow leads down to true peak which is separate measurement that handles inter-sample peaks.
+integrated LUFS  → how loud was the whole program on average (perceived energy over time)
+true peak dBTP   → what was the highest point the waveform ever reached (instantaneous maximum)
+
+streaming platforms convert digital audio to analog during playback, if the real waveform between sample exceeds 0dbFS (1.0 amplitude), you get distortion. This is called Inter-sample clipping.
+
+so lets say mic captures audio 48000 times per second, each capture is a number between -1.0 and 1.0, that's a sample
+
+time:    0ms      0.02ms   0.04ms
+sample:  0.3      0.7      0.4
+
+between those captures, the real world audio is continuous, the actual waveform between sample 1 and sample 2 could go higher than both
+
+real waveform:
+        0.3 → rises to 0.95 → falls to 0.7
+               ↑ never saw this
+
+so to see between samples, we create new fake samples between the real ones, this is called oversampling. at 4x oversampling you insert 3 new samples between each real one.
+
+original (1x):  [0.3,  0.7]
+4x oversample:  [0.3,  0.52, 0.78, 0.95, 0.7]
+                        ↑ these are interpolated
+now, peak that was hiding between original samples is nearly visible
+
+another question is how to interpolate correctly?
+not by averaging - that's too limiting
+we use FIR filter (Finite Impulse Response), it's a set of fixed coefficients
+
+TRUE_PEAK_FIR is short FIR filter with 13 coefficients AKA taps, more taps = more accurate interpolation but more computation per sample. 13 taps is enough for accurate inter-sample peak detection at 4x oversample.
+ITU-BS.1770 specifies the exact FIR coefficients to use for 4x oversampling. They're long — 48 coefficients — but you apply them once and get accurate inter-sample peaks.
+
+true peak buffer is a sliding window of the last 13 raw samples.
+new sample arrives → shift everything right → put new sample at index 0
+[new, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12]
+then convolve with FIR coefficients = one interpolated peak value
+convolve: new_sample = sum(original_samples[i] * fir_coefficients[i])
+
+after oversampling, track the maximum absolute value seen accross the entire recording session as we care about magnitude not direction
+'truePeakMax' starts at 0, only ever goes up, never comes down
+
+some mathematics of how power and amplitude are related:
+power = amplitude ** 2
+log10(amplitude ** 2) = 2 * log10(amplitude)
+so,
+db = 10*log10(power)
+db = 10 * 2 * log10(amplitude)
+
+db is generally a ratio between 2 values
+dBFS measures individual samples. Maximum sample = 0 dBFS. By definition nothing exceeds 0 dBFS in the digital domain
+dbTP measures the reconstructed analog waveform after oversampling. that reconstructed waveform CAN exceed 1.0 amplitude even when no individual sample did. (that is clipping in analog when over 1.0) and dbTP CAN be positive
+
+reasoning: streaming platforms found that millions of tracks that measured fine digitally were causing distortion on consumer playback hardware. tje jardware DACs (digital to analog converters) were clipping on inter-sample peaks. so they mandated -1 dbTP maximum to leave headroom for the reconstruction. the problem is not digital but digital to analog conversion.
 
 delay calculation for full chain:
 

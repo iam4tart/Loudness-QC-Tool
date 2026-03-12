@@ -6,9 +6,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const barShortterm = document.getElementById("bar-shortterm");
     const valMomentary = document.getElementById("val-momentary");
     const valShortterm = document.getElementById("val-shortterm");
-    let currentLufs = -Infinity;
     let momentaryLufs = -Infinity;
     let shortTermLufs = -Infinity;
+    let integratedLufs = -Infinity;
+    let truePeakLufs = -Infinity;
 
     const MIN_LUFS = -60;
     const MAX_LUFS = 0;
@@ -60,6 +61,22 @@ document.addEventListener("DOMContentLoaded", () => {
             valShortterm.textContent = "--- LUFS";
         }
 
+        if (isFinite(integratedLufs)) {
+            document.getElementById("bar-integrated").style.height = lufsToHeight(integratedLufs) + "%";
+            document.getElementById("val-integrated").textContent = integratedLufs.toFixed(1) + " LUFS";
+        } else {
+            document.getElementById("bar-integrated").style.height = "0%";
+            document.getElementById("val-integrated").textContent = "--- LUFS";
+        }
+
+        if (isFinite(truePeakLufs)) {
+            document.getElementById("bar-truepeak").style.height = lufsToHeight(truePeakLufs) + "%";
+            document.getElementById("val-truepeak").textContent = truePeakLufs.toFixed(1) + " dBTP";
+        } else {
+            document.getElementById("bar-truepeak").style.height = "0%";
+            document.getElementById("val-truepeak").textContent = "--- dBTP";
+        }
+
         requestAnimationFrame(drawMeter);
     }
     requestAnimationFrame(drawMeter);
@@ -84,8 +101,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     const workletNode = new AudioWorkletNode(audioContext, 'loudness-processor');
 
                     workletNode.port.onmessage = (e) => {
-                        momentaryLufs = e.data.momentary;
-                        shortTermLufs = e.data.shortTerm;
+                        if (e.data.momentary !== undefined) {
+                            momentaryLufs = e.data.momentary;
+                            shortTermLufs = e.data.shortTerm;
+                        }
+                        if (e.data.integrated !== undefined) {
+                            integratedLufs = e.data.integrated;
+                        }
+                        if (e.data.truePeak !== undefined) {
+                            truePeakLufs = e.data.truePeak;
+                        }
                     };
 
                     source.connect(workletNode);
@@ -96,17 +121,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
                 .catch(err => {
                     console.error("Microphone access denied", err);
-                    alert("Please allow microphone access")
+                    alert("Please allow microphone access");
                 });
-        }
-        else {
+        } else {
             isRecording = false;
             button.textContent = "Start Recording";
             momentaryLufs = -Infinity;
             shortTermLufs = -Infinity;
 
-            if (window.workletNode) window.workletNode.disconnect();
-            if (window.audioContext) window.audioContext.close();
+            window.workletNode.port.postMessage({ command: "getIntegrated" });
+
+            setTimeout(() => {
+                if (window.workletNode) window.workletNode.disconnect();
+                if (window.audioContext) window.audioContext.close();
+            }, 300);
         }
     }
 });
