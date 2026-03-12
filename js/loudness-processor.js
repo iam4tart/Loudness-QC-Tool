@@ -1,8 +1,37 @@
-const TRUE_PEAK_FIR = [
-    0.0017089843750, 0.0109863281250, -0.0196533203125, 0.0332031250000,
-   -0.0594482421875, 0.1373291015625,  0.9833984375000, 0.1373291015625,
-   -0.0594482421875, 0.0332031250000, -0.0196533203125, 0.0109863281250,
-    0.0017089843750
+const TRUE_PEAK_PHASES = [
+    // phase 1 - t=0.25
+    [
+        0.0000000000, -0.0001700000,  0.0005500000, -0.0012800000,
+        0.0024900000, -0.0043100000,  0.0068300000, -0.0100600000,
+        0.0138900000, -0.0184200000,  0.0238400000, -0.0304300000,
+        0.0385700000, -0.0490100000,  0.0630100000, -0.0840100000,
+        0.1200500000,  0.7830100000,  0.2531700000, -0.1014500000,
+        0.0541700000, -0.0316700000,  0.0193800000, -0.0119600000,
+        0.0072100000, -0.0041800000,  0.0022800000, -0.0011300000,
+        0.0004900000, -0.0001700000,  0.0000400000
+    ],
+    // phase 2 - t=0.50
+    [
+        0.0000000000, -0.0002500000,  0.0007900000, -0.0018000000,
+        0.0034300000, -0.0057800000,  0.0089300000, -0.0128400000,
+        0.0173100000, -0.0223400000,  0.0279300000, -0.0341400000,
+        0.0411400000, -0.0492300000,  0.0590600000, -0.0714400000,
+        0.0885600000,  0.5859400000,  0.5859400000, -0.0885600000,
+        0.0714400000, -0.0590600000,  0.0492300000, -0.0411400000,
+        0.0341400000, -0.0279300000,  0.0223400000, -0.0173100000,
+        0.0128400000, -0.0089300000,  0.0057800000
+    ],
+    // phase 3 - t=0.75
+    [
+        0.0000400000, -0.0001700000,  0.0004900000, -0.0011300000,
+        0.0022800000, -0.0041800000,  0.0072100000, -0.0119600000,
+        0.0193800000, -0.0316700000,  0.0541700000, -0.1014500000,
+        0.2531700000,  0.7830100000,  0.1200500000, -0.0840100000,
+        0.0630100000, -0.0490100000,  0.0385700000, -0.0304300000,
+        0.0238400000, -0.0184200000,  0.0138900000, -0.0100600000,
+        0.0068300000, -0.0043100000,  0.0024900000, -0.0012800000,
+        0.0005500000, -0.0001700000,  0.0000000000
+    ]
 ];
 
 class LoudnessProcessor extends AudioWorkletProcessor {
@@ -20,7 +49,7 @@ class LoudnessProcessor extends AudioWorkletProcessor {
         this.bufferSize_shortterm = null;
         this.hopSize = null;
         this.integratedBlocks = [];
-        this.truePeakBuffer = new Float32Array(TRUE_PEAK_FIR.length).fill(0);
+        this.truePeakBuffer = new Float32Array(31).fill(0);
         this.truePeakMax = 0;
 
         this.port.onmessage = (e) => {
@@ -69,15 +98,21 @@ class LoudnessProcessor extends AudioWorkletProcessor {
         }
         this.truePeakBuffer[0] = sample;
 
-        // convolve with FIR - this gives one interpolated peak estimate
-        let peak = 0;
-        for(let i=0; i<TRUE_PEAK_FIR.length; i++) {
-            peak += TRUE_PEAK_FIR[i] * this.truePeakBuffer[i];
+        // consder the real sample itself as candidate peak
+        const realPeak = Math.abs(sample);
+        let maxThisSample = realPeak;
+
+        for(let phase=0; phase<3; phase++) {
+            let sum=0;
+            for(let i=0; i<31; i++) {
+                sum += TRUE_PEAK_PHASES[phase][i] * this.truePeakBuffer[i];
+            }
+            const absPeak = Math.abs(sum);
+            if(absPeak > maxThisSample) maxThisSample = absPeak;
         }
 
-        const absPeak = Math.abs(peak);
-        if(absPeak > this.truePeakMax) {
-            this.truePeakMax = absPeak;
+        if(maxThisSample > this.truePeakMax) {
+            this.truePeakMax = maxThisSample;
         }
     }
 

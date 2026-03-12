@@ -156,10 +156,11 @@ another question is how to interpolate correctly?
 not by averaging - that's too limiting
 we use FIR filter (Finite Impulse Response), it's a set of fixed coefficients
 
-TRUE_PEAK_FIR is short FIR filter with 13 coefficients AKA taps, more taps = more accurate interpolation but more computation per sample. 13 taps is enough for accurate inter-sample peak detection at 4x oversample.
+TRUE_PEAK_FIR is short FIR filter with 13 coefficients AKA taps, more taps = more accurate interpolation but more computation per sample. 13 taps is enough for accurate inter-sample peak detection. 
 ITU-BS.1770 specifies the exact FIR coefficients to use for 4x oversampling. They're long — 48 coefficients — but you apply them once and get accurate inter-sample peaks.
+more coefficients = longer filter = more accurate reconstruction of the waveform between samples
 
-true peak buffer is a sliding window of the last 13 raw samples.
+true peak buffer is a sliding window of the last raw samples.
 new sample arrives → shift everything right → put new sample at index 0
 [new, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12]
 then convolve with FIR coefficients = one interpolated peak value
@@ -167,6 +168,14 @@ convolve: new_sample = sum(original_samples[i] * fir_coefficients[i])
 
 after oversampling, track the maximum absolute value seen accross the entire recording session as we care about magnitude not direction
 'truePeakMax' starts at 0, only ever goes up, never comes down
+
+3 phase + real samples = checks 4 points per sample instead of 1 (true 4x oversampling)
+more points between samples = less chance of missing the actual peak
+ex-
+real t=0.00: [0.3,   0.95,  0.4]
+phase 1 t=0.25: [0.61,  0.89,  0.55]
+phase 2 t=0.50: [0.71,  0.98,  0.61]
+phase 3 t=0.75: [0.85,  0.94,  0.48]
 
 some mathematics of how power and amplitude are related:
 power = amplitude ** 2
@@ -179,7 +188,9 @@ db is generally a ratio between 2 values
 dBFS measures individual samples. Maximum sample = 0 dBFS. By definition nothing exceeds 0 dBFS in the digital domain
 dbTP measures the reconstructed analog waveform after oversampling. that reconstructed waveform CAN exceed 1.0 amplitude even when no individual sample did. (that is clipping in analog when over 1.0) and dbTP CAN be positive
 
-reasoning: streaming platforms found that millions of tracks that measured fine digitally were causing distortion on consumer playback hardware. tje jardware DACs (digital to analog converters) were clipping on inter-sample peaks. so they mandated -1 dbTP maximum to leave headroom for the reconstruction. the problem is not digital but digital to analog conversion.
+reasoning: streaming platforms found that millions of tracks that measured fine digitally were causing distortion on consumer playback hardware. the hardware DACs (digital to analog converters) were clipping on inter-sample peaks. so they mandated -1 dbTP maximum to leave headroom for the reconstruction. the problem is not digital but digital to analog conversion.
+
+edit: i have updated to more coefficients for true 4x oversampling as outlines by ITU standard
 
 delay calculation for full chain:
 
