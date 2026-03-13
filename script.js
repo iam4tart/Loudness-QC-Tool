@@ -11,6 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let integratedLufs = -Infinity;
     let truePeakLufs = -Infinity;
 
+    const vadWorker = new Worker('./js/vad_worker.js');
+    vadWorker.onmessage = (e) => {
+        if(e.data.type === 'ready') {
+            console.log('VAD ready');
+        }
+    }
+
     const MIN_LUFS = -60;
     const MAX_LUFS = 0;
 
