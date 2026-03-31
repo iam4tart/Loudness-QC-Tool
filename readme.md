@@ -1,5 +1,7 @@
 ![Loudness Meter Tool Preview](assets/images/preview.png)
 
+Look inside [THINKING POINTERS](https://4t-audio.vercel.app/blog/loudness-qc-tool) for more technical details, calculation, definition and sources used.
+
 [x] HTML button
 
 [x] JS toggle
@@ -33,4 +35,4 @@
 [ ] Low-pass decimation in VAD
 
 
-Look inside [THINKING POINTERS](thinking_pointers.md) for more technical details, calculation, definition and sources used.
+
