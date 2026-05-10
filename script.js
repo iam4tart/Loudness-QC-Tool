@@ -33,16 +33,30 @@ document.addEventListener("DOMContentLoaded", () => {
         scale.appendChild(label);
     });
 
-    navigator.mediaDevices.enumerateDevices().then(devices => {
-        devices.filter(d => d.kind === "audioinput").forEach(d => {
-            const option = document.createElement("option");
-            option.value = d.deviceId;
-            option.text = d.label;
-            micSelect.appendChild(option);
-        });
-    }).catch((e) => {
-        console.error(`${e.name}: ${e.message}`);
-    });
+    async function refreshDevices() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInputs = devices.filter(d => d.kind === "audioinput");
+            
+            const currentSelection = micSelect.value;
+            micSelect.innerHTML = "";
+            
+            audioInputs.forEach(d => {
+                const option = document.createElement("option");
+                option.value = d.deviceId;
+                option.text = d.label || `Microphone ${micSelect.length + 1}`;
+                micSelect.appendChild(option);
+            });
+
+            if (currentSelection && [...micSelect.options].some(o => o.value === currentSelection)) {
+                micSelect.value = currentSelection;
+            }
+        } catch (e) {
+            console.error(`${e.name}: ${e.message}`);
+        }
+    }
+
+    refreshDevices();
 
     button.onclick = Record;
 
@@ -90,15 +104,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function Record() {
         if (!isRecording) {
-            navigator.mediaDevices.getUserMedia({
+            const constraints = {
                 audio: {
-                    deviceId: { exact: micSelect.value },
                     echoCancellation: false,
                     noiseSuppression: false,
                     autoGainControl: false
                 }
-            })
+            };
+
+            if (micSelect.value) {
+                constraints.audio.deviceId = { exact: micSelect.value };
+            }
+
+            navigator.mediaDevices.getUserMedia(constraints)
                 .then(async stream => {
+                    await refreshDevices();
                     isRecording = true;
                     button.textContent = "Stop Recording";
 
