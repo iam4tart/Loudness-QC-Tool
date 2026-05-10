@@ -8,15 +8,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const valShortterm = document.getElementById("val-shortterm");
     let momentaryLufs = -Infinity;
     let shortTermLufs = -Infinity;
-    let integratedLufs = -Infinity;
+    let integratedLufs_itu = -Infinity;
+    let integratedLufs_vad = -Infinity;
     let truePeakLufs = -Infinity;
+
+    let vadMode = false;
+    const btnItu = document.getElementById("btn-itu");
+    const btnVad = document.getElementById("btn-vad");
+
+    btnItu.onclick = () => {
+        vadMode = false;
+        btnItu.classList.add("active");
+        btnVad.classList.remove("active");
+    };
+
+    btnVad.onclick = () => {
+        vadMode = true;
+        btnVad.classList.add("active");
+        btnItu.classList.remove("active");
+    };
 
     const vadWorker = new Worker('./js/vad_worker.js');
     vadWorker.onmessage = (e) => {
-        if(e.data.type === 'ready') {
+        if (e.data.type === 'ready') {
             console.log('VAD ready');
         }
-    }
+    };
 
     const MIN_LUFS = -60;
     const MAX_LUFS = 0;
@@ -68,6 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
             valShortterm.textContent = "--- LUFS";
         }
 
+        const integratedLufs = vadMode ? integratedLufs_vad : integratedLufs_itu;
         if (isFinite(integratedLufs)) {
             document.getElementById("bar-integrated").style.height = lufsToHeight(integratedLufs) + "%";
             document.getElementById("val-integrated").textContent = integratedLufs.toFixed(1) + " LUFS";
@@ -114,7 +132,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             truePeakLufs = e.data.truePeak;
                         }
                         if (e.data.integrated !== undefined) {
-                            integratedLufs = e.data.integrated;
+                            integratedLufs_itu = e.data.integrated;
+                        }
+                        if (e.data.integrated_vad !== undefined) {
+                            integratedLufs_vad = e.data.integrated_vad;
                         }
                     };
 
@@ -133,7 +154,9 @@ document.addEventListener("DOMContentLoaded", () => {
             button.textContent = "Start Recording";
             momentaryLufs = -Infinity;
             shortTermLufs = -Infinity;
-            truePeakLufs = -Infinity; 
+            truePeakLufs = -Infinity;
+            integratedLufs_itu = -Infinity;
+            integratedLufs_vad = -Infinity;
 
             window.workletNode.port.postMessage({ command: "getIntegrated" });
 

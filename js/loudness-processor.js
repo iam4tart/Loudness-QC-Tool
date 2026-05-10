@@ -48,9 +48,10 @@ class LoudnessProcessor extends AudioWorkletProcessor {
         this.buffer_shortterm = [];
         this.bufferSize_shortterm = null;
         this.hopSize = null;
-        this.integratedBlocks = [];
         this.truePeakBuffer = new Float32Array(31).fill(0);
         this.truePeakMax = 0;
+
+        let i
 
         this.port.onmessage = (e) => {
             if (e.data.command === "getIntegrated") {

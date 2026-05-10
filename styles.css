@@ -167,3 +167,35 @@ h1 {
     transform: translateY(-50%);
     line-height: 1;
 }
+
+#vad-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.mode-btn {
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    padding: 10px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-btn.active {
+    background: var(--surface);
+    color: var(--text-inv);
+}
+
+#speech-stats {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+}

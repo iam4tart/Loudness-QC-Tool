@@ -231,6 +231,17 @@ this is why proper downsampling should apply a low-pass filter first (anti-alias
 before decimating - to average the energy of those 3 samples into 1 rather than just discarding 2
 taking naively every 3rd sample can introduce aliasing artifacts, for VAD it is acceptable to detect speech not to reconstruct audio
 
+if we use vad to monitor voice only chunks, one might say that whole math is changed now but in actuality it is same but as voice is just audio only without ambience and other characterstics
+but the gate that passes chunks to loudness meter has become more selective either binary (voice or no) or dynamic filter-y (based on model training)
+like:
+ITU: average(all blocks that pass mathematical gate)
+VAD: average(all blocks where Silero said isSpeaking=true)
+
+previously we were asking  "what is the average loudness of this recording?"
+and now "does VAD-gated integrated LUFS produce a more perceptually meaningful number than ITU-gated integrated LUFS for dialogue content?"
+
+
+
 delay calculation for full chain:
 
 AUDIO INPUT

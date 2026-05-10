@@ -1,51 +1,62 @@
 <html>
-  <head>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <h1>Loudness Meter</h1>
-    <div id="controls">
-      <select id="mic-select"></select>
-      <button id="recording-button">Start Recording</button>
+
+<head>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <h1>Loudness Meter</h1>
+  <div id="controls">
+    <select id="mic-select"></select>
+    <button id="recording-button">Start Recording</button>
+    <div id="vad-toggle">
+      <button class="mode-btn active" id="btn-itu">ITU</button>
+      <button class="mode-btn" id="btn-vad">VAD</button>
+    </div>
+  </div>
+
+  <div id="meter-container">
+
+    <div id="speech-stats">
+      <span id="speech-ratio">Speech: ---%</span>
     </div>
 
-    <div id="meter-container">
-
-      <div class="meter-column">
-        <div class="meter-label">Momentary</div>
-        <div class="meter-bar-bg">
-          <div class="meter-bar" id="bar-momentary"></div>
-        </div>
-        <div class="meter-value" id="val-momentary">--- LUFS</div>
+    <div class="meter-column">
+      <div class="meter-label">Momentary</div>
+      <div class="meter-bar-bg">
+        <div class="meter-bar" id="bar-momentary"></div>
       </div>
-
-      <div class="meter-column">
-        <div class="meter-label">Short-term</div>
-        <div class="meter-bar-bg">
-          <div class="meter-bar" id="bar-shortterm"></div>
-        </div>
-        <div class="meter-value" id="val-shortterm">--- LUFS</div>
-      </div>
-
-      <div class="meter-column">
-        <div class="meter-label">Integrated</div>
-        <div class="meter-bar-bg">
-          <div class="meter-bar" id="bar-integrated"></div>
-        </div>
-        <div class="meter-value" id="val-integrated">--- LUFS</div>
-      </div>
-
-      <div class="meter-column">
-        <div class="meter-label">True Peak</div>
-        <div class="meter-bar-bg">
-          <div class="meter-bar" id="bar-truepeak"></div>
-        </div>
-        <div class="meter-value" id="val-truepeak">--- dBTP</div>
-      </div>
-
-      <div id="scale"></div>
+      <div class="meter-value" id="val-momentary">--- LUFS</div>
     </div>
 
-    <script src="script.js"></script>
-  </body>
+    <div class="meter-column">
+      <div class="meter-label">Short-term</div>
+      <div class="meter-bar-bg">
+        <div class="meter-bar" id="bar-shortterm"></div>
+      </div>
+      <div class="meter-value" id="val-shortterm">--- LUFS</div>
+    </div>
+
+    <div class="meter-column">
+      <div class="meter-label">Integrated</div>
+      <div class="meter-bar-bg">
+        <div class="meter-bar" id="bar-integrated"></div>
+      </div>
+      <div class="meter-value" id="val-integrated">--- LUFS</div>
+    </div>
+
+    <div class="meter-column">
+      <div class="meter-label">True Peak</div>
+      <div class="meter-bar-bg">
+        <div class="meter-bar" id="bar-truepeak"></div>
+      </div>
+      <div class="meter-value" id="val-truepeak">--- dBTP</div>
+    </div>
+
+    <div id="scale"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
 </html>
